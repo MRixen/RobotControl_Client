@@ -1,6 +1,7 @@
 ﻿using CanTest;
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
@@ -14,9 +15,9 @@ namespace App1
     {
         private GlobalDataSet globalDataSet;
 
-        private StreamSocket _socket;
-        private DataWriter _writer;
-        private DataReader _reader;
+        private StreamSocket socket_client_receive, socket_client_send;
+        private DataWriter dataWriter;
+        private DataReader dataReader;
 
         public delegate void Error(string message);
         public event Error OnError;
@@ -34,10 +35,17 @@ namespace App1
             try
             {
                 var hostName = new HostName(globalDataSet.HostIp);
-                _socket = new StreamSocket();
-                await _socket.ConnectAsync(hostName, globalDataSet.HostPortReceive.ToString());
-                _writer = new DataWriter(_socket.OutputStream);
-                receiveFromServer();
+
+                // Connect to server send socket
+                socket_client_receive = new StreamSocket();
+                await socket_client_receive.ConnectAsync(hostName, globalDataSet.HostPortSend.ToString());
+                dataReader = new DataReader(socket_client_receive.InputStream);
+
+                // Connect to server receive socket
+                socket_client_send = new StreamSocket();
+                await socket_client_send.ConnectAsync(hostName, globalDataSet.HostPortReceive.ToString());
+                dataWriter = new DataWriter(socket_client_send.OutputStream);
+                clientServerLoop();
             }
             catch (Exception ex)
             {
@@ -46,19 +54,15 @@ namespace App1
             }
         }
 
-        public async void sendToServer(string message)
+        public async void sendData(Byte[] message)
         {
-            //Envia o tamanho da string
-            _writer.WriteUInt32(_writer.MeasureString(message));
-            //Envia a string em si
-            _writer.WriteString(message);
+            dataWriter.WriteBytes(message);
+            //for (int i = 0; i < message.Length; i++) Debug.WriteLine("send message[" + i + "]" + message[i]);
 
             try
             {
-                //Faz o Envio da mensagem
-                await _writer.StoreAsync();
-                //Limpa para o proximo envio de mensagem
-                await _writer.FlushAsync();
+                await dataWriter.StoreAsync();
+                await dataWriter.FlushAsync();
             }
             catch (Exception ex)
             {
@@ -67,25 +71,56 @@ namespace App1
             }
         }
 
-        private async void receiveFromServer()
+        // Check different task numbers and do some work
+        private async void clientServerLoop()
         {
-            _reader = new DataReader(_socket.InputStream);
+            Byte[] receiveBytes = new byte[8];
+            Byte[] sendBytes = new Byte[8];
             try
             {
                 while (true)
                 {
-                    uint sizeFieldCount = await _reader.LoadAsync(sizeof(uint));
-                    //if desconneted
-                    if (sizeFieldCount != sizeof(uint))
-                        return;
+                    // Read data from incoming stream (server)
+                    uint sizeFieldCount = await dataReader.LoadAsync(8);
+                    dataReader.ReadBytes(receiveBytes);
+                    //for (int i = 0; i < receiveBytes.Length; i++) Debug.WriteLine("receive receiveBytes[" + i + "]" + receiveBytes[i]);
 
-                    uint stringLenght = _reader.ReadUInt32();
-                    uint actualStringLength = await _reader.LoadAsync(stringLenght);
+                    //Debug.WriteLine("receive receiveBytes[" + 3 + "]" + receiveBytes[3]);
+                    //Debug.WriteLine("receive receiveBytes[" + 4 + "]" + receiveBytes[4]);
+
+
+                    // Set incoming data to global data
+                    globalDataSet.SollControlData = receiveBytes;
+
+                    // TASK 1: Auto mode
+                    // TASK 2: Save ref pos
+                    if ((receiveBytes[0] == 1) | (receiveBytes[0] == 2))
+                    {
+                        // TODO: 
+                        // Handle the smoothing factor!
+                        for (int i = 0; i < sendBytes.Length; i++)
+                        {
+                            sendBytes[i] = globalDataSet.IstControlData[i];
+                            Debug.WriteLine("sendBytes["+ i + "]: " + sendBytes[i]);
+                            Debug.WriteLine("receiveBytes[" + i + "]: " + receiveBytes[i]);
+                        }
+
+                        // Send data back to server 
+                        sendData(sendBytes);
+                    }
+
+                    //uint sizeFieldCount = await dataReader.LoadAsync(8);
                     //if desconneted
-                    if (stringLenght != actualStringLength)
-                        return;
-                    if (OnDataRecived != null)
-                        OnDataRecived(_reader.ReadString(actualStringLength));
+                    //if (sizeFieldCount != sizeof(uint))
+                    //    return;
+
+                    //dataReader.ReadBytes(receiveBytes);
+                    //uint actualStringLength = await _reader.LoadAsync(stringLenght);
+                    ////if desconneted
+                    //if (stringLenght != actualStringLength)
+                    //    return;
+                    //if (OnDataRecived != null)
+                    //    OnDataRecived(dataReader.ReadString(actualStringLength));
                 }
 
             }
@@ -96,15 +131,17 @@ namespace App1
             }
         }
 
+
         public void closeConnection()
         {
-            _writer.DetachStream();
-            _writer.Dispose();
+            dataWriter.DetachStream();
+            dataWriter.Dispose();
 
-            _reader.DetachStream();
-            _reader.Dispose();
+            dataReader.DetachStream();
+            dataReader.Dispose();
 
-            _socket.Dispose();
+            socket_client_send.Dispose();
+            socket_client_receive.Dispose();
         }
     }
 }

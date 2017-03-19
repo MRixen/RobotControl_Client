@@ -22,9 +22,51 @@ namespace CanTest
         private Logic_Mcp2515_Sender logic_Mcp2515_Sender;
         private Logic_Mcp2515_Receiver logic_Mcp2515_Receiver;
         private bool debugMode;
-        private string HOST_IP = "192.168.1.2";
-            private string HOST_PORT_RECEIVE = "4001";
-            private string HOST_PORT_SEND = "4001";
+        private string HOST_IP = "192.168.0.111";
+        private string HOST_PORT_RECEIVE = "4002";
+        private string HOST_PORT_SEND = "4001";
+        private byte[] currentMotorAngle = new byte[2];
+        private byte[] currentMotorSollValue = new byte[2];
+
+        // CONTENT
+        // 0. byte: Number of the task 
+        // 1. byte: ID of the motor to move
+        // 2-3. byte: Velocity to move the motor to the specified position
+        // 4-5. byte: Endposition for the specific motor 
+        // 6. byte: Direction of the motor
+        // 7. byte: 
+        private byte[] soll_control_values = new byte[8];
+
+        // CONTENT
+        // 0. byte: Number of the task 
+        // 1. byte: ID of the motor to move
+        // 2-3. byte: Velocity to move the motor to the specified position
+        // 4-5. byte: Endposition for the specific motor 
+        // 6. byte: Direction of the motor
+        // 7. byte: 
+        private byte[] ist_control_values = new byte[8];
+
+        public enum Soll_ControlDataAssignment
+        {
+            soll_task_no,
+            soll_motor_id,
+            soll_motor_vel_1,
+            soll_motor_vel_2,
+            soll_motor_angle_1,
+            soll_motor_angle_2,
+            soll_motor_dir
+        };
+
+        public enum Ist_ControlDataAssignment
+        {
+            ist_task_no,
+            ist_motor_id,
+            ist_motor_vel_1,
+            ist_motor_vel_2,
+            ist_motor_angle_1,
+            ist_motor_angle_2,
+            ist_encoder_dir
+        };
 
         public GlobalDataSet()
         {
@@ -294,12 +336,12 @@ namespace CanTest
 
         public byte[] readSimpleCommandSpi_v3(byte bufferId, GpioPin cs_pin)
         {
-            byte[] returnMessage = new byte[mcp2515.MessageSizePwm];
+            byte[] returnMessage = new byte[mcp2515.MessageSizeToMcp];
             byte[] returnMessageTemp = new byte[1];
 
             cs_pin.Write(GpioPinValue.Low);
             spiDevice.Write(new byte[] { bufferId });
-            for (int i = 0; i < mcp2515.MessageSizePwm; i++)
+            for (int i = 0; i < mcp2515.MessageSizeToMcp; i++)
             {
                 spiDevice.Read(returnMessageTemp);
                 returnMessage[i] = returnMessageTemp[0];
@@ -346,7 +388,7 @@ namespace CanTest
         }
 
         public byte executeReadStateCommand(GpioPin cs_pin)
-        { 
+        {
             byte[] returnMessage = new byte[1];
             byte[] sendMessage = new byte[1];
 
@@ -417,6 +459,19 @@ namespace CanTest
             }
         }
 
+        public string HostPortSend
+        {
+            get
+            {
+                return HOST_PORT_SEND;
+            }
+
+            set
+            {
+                HOST_PORT_SEND = value;
+            }
+        }
+
         public string HostPortReceive
         {
             get
@@ -430,16 +485,56 @@ namespace CanTest
             }
         }
 
-        public string HostPortSend
+        public byte[] CurrentMotorAngle
         {
             get
             {
-                return HOST_PORT_SEND;
+                return currentMotorAngle;
             }
 
             set
             {
-                HOST_PORT_SEND = value;
+                currentMotorAngle = value;
+            }
+        }
+
+        public byte[] CurrentMotorControlData
+        {
+            get
+            {
+                return currentMotorSollValue;
+            }
+
+            set
+            {
+                currentMotorSollValue = value;
+            }
+        }
+
+
+        public byte[] SollControlData
+        {
+            get
+            {
+                return soll_control_values;
+            }
+
+            set
+            {
+                soll_control_values = value;
+            }
+        }
+
+        public byte[] IstControlData
+        {
+            get
+            {
+                return ist_control_values;
+            }
+
+            set
+            {
+                ist_control_values = value;
             }
         }
 

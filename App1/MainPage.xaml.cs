@@ -50,8 +50,15 @@ namespace App1
         private const int ACCEL_RES = 1024;         /* The ADXL345 has 10 bit resolution giving 1024 unique values                     */
         private const int ACCEL_DYN_RANGE_G = 8;    /* The ADXL345 had a total dynamic range of 8G, since we're configuring it to +-4G */
         private const int UNITS_PER_G = ACCEL_RES / ACCEL_DYN_RANGE_G;  // Ratio of raw int values to G units          
-        private short sliderValueTemp;
-        private byte[] bytesToSend = new byte[3];
+
+        // CONTENT
+        // 0. byte: Number of the task (if no task is selected this value is 0 > Robot shall move, e.g. no tasks)
+        // 1. byte: ID of the motor to move
+        // 2-3. byte: Velocity to move the motor to the specified position
+        // 4-5. byte: Endposition for the specific motor 
+        // 6. byte: Direction of the motor
+        // 7. byte: 
+        private byte[] bytesToSend = new byte[8];
 
         struct McpExecutorDataFrame
         {
@@ -106,7 +113,7 @@ namespace App1
         private bool getProgramDuration;
         private long timerValue;
         private long[] timerArray = new long[10];
-        private double sliderValue = 0;
+        private double currentMotorAngle = 0;
 
         public MainPage()
         {
@@ -130,17 +137,17 @@ namespace App1
             getProgramDuration = false;
 
             // Inititalize raspberry pi and gpio
-            //init_raspberry_pi_gpio();
-            //init_raspberry_pi_spi();
+            init_raspberry_pi_gpio();
+            init_raspberry_pi_spi();
 
             // Inititalize mcp2515
-            //Task task_initMcp2515 = new Task(globalDataSet.init_mcp2515_task);
-            //task_initMcp2515.Start();
-            //task_initMcp2515.Wait();
+            Task task_initMcp2515 = new Task(globalDataSet.init_mcp2515_task);
+            task_initMcp2515.Start();
+            task_initMcp2515.Wait();
 
             // Start executor service
-            //task_mcpExecutorService = new Task(mcpExecutorService_task);
-            //task_mcpExecutorService.Start();
+            task_mcpExecutorService = new Task(mcpExecutorService_task);
+            task_mcpExecutorService.Start();
 
             // Inititalize background tasks
             stateTimer = new Timer(this.StateTimer, null, 0, DELTA_T_TIMER_CALLBACK); // Create timer to display the state of message transmission
@@ -201,7 +208,7 @@ namespace App1
             }
 
             // Send something to check that spi device is ready
-            globalDataSet.Spi_not_initialized = true;
+            //globalDataSet.Spi_not_initialized = true;
             while (globalDataSet.Spi_not_initialized)
             {
                 bool error = false;
@@ -303,7 +310,7 @@ namespace App1
 
         private void SendMotorData(byte rxStateIst, byte rxStateSoll)
         {
-            byte[] returnMessage = new byte[mcp2515.MessageSizeAdxl];
+            byte[] returnMessage = new byte[mcp2515.MsgSizeFromMcp];
             byte[] returnMessageTemp = new byte[1];
 
             if ((rxStateIst & rxStateSoll) == 1)
@@ -332,7 +339,7 @@ namespace App1
         {
             startSequenceIsActive = true;
             changeHmiElements(HmiElementsStates.startIsPressed);
-            sliderValue = slider.Value;
+            currentMotorAngle = slider.Value;
         }
 
         private void button_stopp_Click(object sender, RoutedEventArgs e)
@@ -343,7 +350,7 @@ namespace App1
 
         public async void mcpExecutorService_task()
         {
-            await Task.Run(() => execServ_mcp2515());
+            await Task.Run(() => controlLoop());
         }
 
         private void checkBox_sinus_Checked(object sender, RoutedEventArgs e)
@@ -430,10 +437,13 @@ namespace App1
             }
         }
 
-        private void execServ_mcp2515()
+        // DESCRIPTION
+        // Send soll data to motors
+        // Receive angle position from motors and set it to global variable
+        private void controlLoop()
         {
             long startTimeCheck = 0;
-            bool preCondIsSet = false;
+            //bool preCondIsSet = false;
 
             while (!globalDataSet.StopAllOperations)
             {
@@ -441,49 +451,34 @@ namespace App1
                 // After this pre condition we are able to start the measurment via the HMI
 
                 //if (globalDataSet.clientIsConnected & !globalDataSet.Spi_not_initialized & !preCondIsSet)
-                if (!globalDataSet.Spi_not_initialized & !preCondIsSet)
+                while (globalDataSet.Spi_not_initialized)
                 {
-                    Debug.WriteLine("test");
+                    //Debug.WriteLine("test");
                     /* UI updates must be invoked on the UI thread */
-                    var task = this.Dispatcher.RunAsync(Windows.UI.Core.CoreDispatcherPriority.Normal, () =>
-                    {
-                        changeHmiElements(HmiElementsStates.enableAll);
-                    });
-                    preCondIsSet = true;
+                    //var task = this.Dispatcher.RunAsync(Windows.UI.Core.CoreDispatcherPriority.Normal, () =>
+                    //{
+                    //    changeHmiElements(HmiElementsStates.enableAll);
+                    //});
+                    //preCondIsSet = true;
+                    Debug.WriteLine("wait for spi device");
                 }
-                
-                if(startSequenceIsActive)
-                {
+                // Reset / Start timer for program execution delay
+                stopWatchStart(stopwatch_delay);
 
-                    // Reset / Start timer for program execution delay
-                    stopWatchStart(stopwatch_delay);
+                // Send motor angle end position (that comes from server) to device via spi to can bus
+                sendAngleToMotor();
 
-                    // Send pulse value (as pwm) to device via spi to can bus
-                    sendSliderValueData((int)sliderValue);
+                // Delay for program execution. Its neccessary to avoid failures in data transmission
+                delay(startTimeCheck, 20);
 
-                    // Delay for program execution. Its neccessary to avoid failures in data transmission
-                    delay(startTimeCheck, 20);
+                // Read encoder value from device via spi from can bus
+                receiveEncoderData();
 
-                    // Read encoder value from device via spi from can bus
-                    double encoderValue = receiveEncoderData();
+                // Delay for program execution. Its neccessary to avoid failures in data transmission
+                delay(startTimeCheck, 20);
 
-                    Debug.WriteLine(encoderValue);
-
-                    // Timer to generate timestamp
-                    stopWatchStart(stopwatch_timestamp);
-
-                    // Send everything to client via tcp / ip
-                    sendDataToClient((int)sliderValue, encoderValue, stopwatch_timestamp.ElapsedMilliseconds, (int)pulses.active_pulse_type);
-
-                    // Delay for program execution. Its neccessary to avoid failures in data transmission
-                    delay(startTimeCheck, 20);
-                }
-                else
-                {
-                    stopWatchStop(stopwatch_delay);
-                    stopWatchStop(stopwatch_timestamp);
-                }
             }
+            stopWatchStop(stopwatch_delay);
         }
 
         private void stopWatchStop(Stopwatch stopwatch)
@@ -515,12 +510,12 @@ namespace App1
 
             string message = pwmValue + "::" + encoderValue + "::" + zText + "::" + timeStamp;
             diagnose.sendToSocket(signal_Id, message);
-    }
+        }
 
         private void slider_valueChanged(object sender, RangeBaseValueChangedEventArgs e)
         {
-            sliderValue = slider.Value;
-            textBlock_istValue.Text = sliderValue.ToString();
+            currentMotorAngle = slider.Value;
+            textBlock_istValue.Text = currentMotorAngle.ToString();
         }
 
         private void delay(long startTimeCHeck, long delayAmount)
@@ -530,45 +525,29 @@ namespace App1
             while ((stopwatch_delay.ElapsedMilliseconds - startTimeCHeck) <= delayAmount) { }
         }
 
-        private void sendSliderValueData(int sliderValue)
+        private void sendAngleToMotor()
         {
-            // Convert pulse to byte
-            if (sliderValue < 0)
-            {
-                sliderValueTemp = (short)(sliderValue * (-1));
-                bytesToSend[0] = (byte)0;
-            }
-            else
-            {
-                sliderValueTemp = (short)(sliderValue);
-                bytesToSend[0] = (byte)1;
-            }
+            // Set motor direction byte and motor angle position bytes to byte array that is send to the motor driver
+            for (int i = 0; i < bytesToSend.Length; i++) bytesToSend[i] = globalDataSet.SollControlData[i];
 
-            //Debug.WriteLine(sliderValue);
-
-            byte[] sliderValue_converted = BitConverter.GetBytes(sliderValueTemp);
-            if (BitConverter.IsLittleEndian) Array.Reverse(sliderValue_converted);
-            bytesToSend[1] = sliderValue_converted[0];
-            bytesToSend[2] = sliderValue_converted[1];
-
-
-            for (int j = 0; j < mcp2515.MessageSizePwm; j++) globalDataSet.LOGIC_MCP2515_RECEIVER.mcp2515_load_tx_buffer0(bytesToSend[j], j, mcp2515.MessageSizePwm);
+            // Send byte array to motor driver
+            for (int j = 0; j < mcp2515.MessageSizeToMcp; j++) globalDataSet.LOGIC_MCP2515_RECEIVER.mcp2515_load_tx_buffer0(bytesToSend[j], j, mcp2515.MessageSizeToMcp);
             globalDataSet.LOGIC_MCP2515_RECEIVER.mcp2515_execute_rts_command(0);
         }
 
-        private double receiveEncoderData()
+        private void receiveEncoderData()
         {
             byte rxStateIst = 0x00;
             byte rxStateSoll = 0x03;
-            byte[] returnMessage = new byte[mcp2515.MessageSizeAdxl];
+            byte[] returnMessage = new byte[mcp2515.MsgSizeFromMcp];
             byte[] returnMessageTemp = new byte[1];
 
             // Wait until a message is received in buffer 0 or 1
             stopwatch_maxWaitMsgIn.Reset();
             stopwatch_maxWaitMsgIn.Start();
             while ((globalDataSet.di_mcp2515_int_rec.Read() == GpioPinValue.High) && stopwatch_maxWaitMsgIn.ElapsedMilliseconds <= MAX_WAIT_TIME) { }
-                //while ((globalDataSet.di_mcp2515_int_rec.Read() == GpioPinValue.High)) { }
-                stopwatch_maxWaitMsgIn.Stop();
+            //while ((globalDataSet.di_mcp2515_int_rec.Read() == GpioPinValue.High)) { }
+            stopwatch_maxWaitMsgIn.Stop();
 
             if (stopwatch_maxWaitMsgIn.ElapsedMilliseconds < MAX_WAIT_TIME)
             {
@@ -579,15 +558,20 @@ namespace App1
                 if ((rxStateIst & rxStateSoll) == 1) returnMessage = globalDataSet.LOGIC_MCP2515_RECEIVER.mcp2515_read_buffer_v3(mcp2515.SPI_INSTRUCTION_READ_RX_BUFFER0);
                 else if ((rxStateIst & rxStateSoll) == 2) returnMessage = globalDataSet.LOGIC_MCP2515_RECEIVER.mcp2515_read_buffer_v3(mcp2515.SPI_INSTRUCTION_READ_RX_BUFFER1);
 
+                // Write encoder direction and encoder value to global data
+                globalDataSet.IstControlData = returnMessage;
+
+
+                //for (int i = 0; i < returnMessage.Length; i++) Debug.WriteLine("IstControlData>returnMessage[" + i + "]: " + returnMessage[i]);
+
                 // Read and convert encoder value (byte[] -> short)
-                int encoderDirection = returnMessage[0];
-                short encoderValue = BitConverter.ToInt16(returnMessage, 1);
+                //int encoderDirection = returnMessage[0];
+                //short encoderValue = BitConverter.ToInt16(returnMessage, 1);
 
                 // Convert encoder value to negative value (if neccessary) and convert it to reziprok value
-                if (encoderDirection == 0) return (encoderValue * (-0.1));
-                else return (encoderValue * 0.1);
+                //if (encoderDirection == 0) return (encoderValue * (-0.1));
+                //else return (encoderValue * 0.1);
             }
-            else return -1;
         }
     }
 }

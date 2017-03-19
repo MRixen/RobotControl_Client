@@ -170,7 +170,7 @@ namespace CanTest
 
         public byte[] mcp2515_read_buffer_v3(byte bufferId)
         {
-            byte[] returnMessage = new byte[mcp2515.MessageSizePwm];
+            byte[] returnMessage = new byte[mcp2515.MessageSizeToMcp];
 
             returnMessage = globalDataSet.readSimpleCommandSpi_v3(bufferId, globalDataSet.do_mcp2515_cs_rec);
 
@@ -281,7 +281,7 @@ namespace CanTest
 
             // Set data length and set rtr bit to zero (no remote request)
             spiMessage[0] = mcp2515.REGISTER_TXB0DLC;
-            spiMessage[1] = mcp2515.MessageSizePwm;
+            spiMessage[1] = mcp2515.MessageSizeToMcp;
             globalDataSet.mcp2515_execute_write_command(spiMessage, globalDataSet.do_mcp2515_cs_rec);
         }
 
@@ -300,7 +300,7 @@ namespace CanTest
 
             // Set data length and set rtr bit to zero (no remote request)
             spiMessage[0] = mcp2515.REGISTER_TXB1DLC;
-            spiMessage[1] = mcp2515.MessageSizePwm;
+            spiMessage[1] = mcp2515.MessageSizeToMcp;
             globalDataSet.mcp2515_execute_write_command(spiMessage, globalDataSet.do_mcp2515_cs_rec);
         }
 
@@ -319,7 +319,7 @@ namespace CanTest
 
             // Set data length and set rtr bit to zero (no remote request)
             spiMessage[0] = mcp2515.REGISTER_TXB2DLC;
-            spiMessage[1] = mcp2515.MessageSizePwm;
+            spiMessage[1] = mcp2515.MessageSizeToMcp;
             globalDataSet.mcp2515_execute_write_command(spiMessage, globalDataSet.do_mcp2515_cs_rec);
         }
 

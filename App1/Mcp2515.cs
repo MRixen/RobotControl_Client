@@ -122,7 +122,7 @@ namespace CanTest
         private byte[] rEGISTER_TXB2Dx = new byte[8];
         private byte[] rEGISTER_RXB0Dx = new byte[8];
         private byte[] rEGISTER_RXB1Dx = new byte[8];
-        private byte messageSizeAdxl, messageSizePwm;
+        private byte msgSizeFromMcp, msgSizeToMcp;
 
         public struct cONTROL_REGISTER_CANSTAT_VALUE
         {
@@ -202,8 +202,8 @@ namespace CanTest
             control_register_canctrl_value.CONFIGURATION_MODE = 0x80;
 
             // Set values for message size
-            MessageSizeAdxl = 0x07; // Sensor data + identifier (1 byte)
-            messageSizePwm = 0x03;
+            MsgSizeFromMcp = 0x08; // Sensor data + identifier (1 byte)
+            msgSizeToMcp = 0x08;
 
             // Set addresss for tx buffer 0
             rEGISTER_TXB0Dx[0] = rEGISTER_TXB0D0;
@@ -1030,29 +1030,29 @@ namespace CanTest
             }
         }
 
-        public byte MessageSizeAdxl
+        public byte MsgSizeFromMcp
         {
             get
             {
-                return messageSizeAdxl;
+                return msgSizeFromMcp;
             }
 
             set
             {
-                messageSizeAdxl = value;
+                msgSizeFromMcp = value;
             }
         }
 
-        public byte MessageSizePwm
+        public byte MessageSizeToMcp
         {
             get
             {
-                return messageSizePwm;
+                return msgSizeToMcp;
             }
 
             set
             {
-                messageSizePwm = value;
+                msgSizeToMcp = value;
             }
         }
     }
