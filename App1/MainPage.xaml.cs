@@ -133,7 +133,7 @@ namespace App1
 
 
             // USER CONFIGURATION
-            globalDataSet.DebugMode = true;
+            globalDataSet.DebugMode = false;
             getProgramDuration = false;
 
             // Inititalize raspberry pi and gpio
@@ -447,38 +447,22 @@ namespace App1
 
             while (!globalDataSet.StopAllOperations)
             {
-                // Wait until a client is connected and the spi device is ready to use
-                // After this pre condition we are able to start the measurment via the HMI
-
-                //if (globalDataSet.clientIsConnected & !globalDataSet.Spi_not_initialized & !preCondIsSet)
-                while (globalDataSet.Spi_not_initialized)
-                {
-                    //Debug.WriteLine("test");
-                    /* UI updates must be invoked on the UI thread */
-                    //var task = this.Dispatcher.RunAsync(Windows.UI.Core.CoreDispatcherPriority.Normal, () =>
-                    //{
-                    //    changeHmiElements(HmiElementsStates.enableAll);
-                    //});
-                    //preCondIsSet = true;
-                    Debug.WriteLine("wait for spi device");
-                }
-                // Reset / Start timer for program execution delay
-                stopWatchStart(stopwatch_delay);
+                // Wait until spi device is ready
+                while (globalDataSet.Spi_not_initialized) if(globalDataSet.DebugMode) Debug.WriteLine("wait for spi device");
 
                 // Send motor angle end position (that comes from server) to device via spi to can bus
-                sendAngleToMotor();
+                sendDataToShields();
 
                 // Delay for program execution. Its neccessary to avoid failures in data transmission
                 delay(startTimeCheck, 20);
 
                 // Read encoder value from device via spi from can bus
-                receiveEncoderData();
+                receiveDataFromShields();
 
                 // Delay for program execution. Its neccessary to avoid failures in data transmission
                 delay(startTimeCheck, 20);
 
             }
-            stopWatchStop(stopwatch_delay);
         }
 
         private void stopWatchStop(Stopwatch stopwatch)
@@ -525,22 +509,21 @@ namespace App1
             while ((stopwatch_delay.ElapsedMilliseconds - startTimeCHeck) <= delayAmount) { }
         }
 
-        private void sendAngleToMotor()
+        private void sendDataToShields()
         {
             // Set motor direction byte and motor angle position bytes to byte array that is send to the motor driver
-            for (int i = 0; i < bytesToSend.Length; i++) bytesToSend[i] = globalDataSet.SollControlData[i];
+            //for (int i = 0; i < bytesToSend.Length; i++) bytesToSend[i] = globalDataSet.Incoming_DataPackage[i];
+            bytesToSend = globalDataSet.Incoming_DataPackage;
 
             // Send byte array to motor driver
             for (int j = 0; j < mcp2515.MessageSizeToMcp; j++) globalDataSet.LOGIC_MCP2515_RECEIVER.mcp2515_load_tx_buffer0(bytesToSend[j], j, mcp2515.MessageSizeToMcp);
             globalDataSet.LOGIC_MCP2515_RECEIVER.mcp2515_execute_rts_command(0);
         }
 
-        private void receiveEncoderData()
+        private void receiveDataFromShields()
         {
             byte rxStateIst = 0x00;
             byte rxStateSoll = 0x03;
-            byte[] returnMessage = new byte[mcp2515.MsgSizeFromMcp];
-            byte[] returnMessageTemp = new byte[1];
 
             // Wait until a message is received in buffer 0 or 1
             stopwatch_maxWaitMsgIn.Reset();
@@ -551,26 +534,11 @@ namespace App1
 
             if (stopwatch_maxWaitMsgIn.ElapsedMilliseconds < MAX_WAIT_TIME)
             {
-
                 // Check in which rx buffer the message is
                 rxStateIst = globalDataSet.LOGIC_MCP2515_RECEIVER.mcp2515_get_state_command();
 
-                if ((rxStateIst & rxStateSoll) == 1) returnMessage = globalDataSet.LOGIC_MCP2515_RECEIVER.mcp2515_read_buffer_v3(mcp2515.SPI_INSTRUCTION_READ_RX_BUFFER0);
-                else if ((rxStateIst & rxStateSoll) == 2) returnMessage = globalDataSet.LOGIC_MCP2515_RECEIVER.mcp2515_read_buffer_v3(mcp2515.SPI_INSTRUCTION_READ_RX_BUFFER1);
-
-                // Write encoder direction and encoder value to global data
-                globalDataSet.IstControlData = returnMessage;
-
-
-                //for (int i = 0; i < returnMessage.Length; i++) Debug.WriteLine("IstControlData>returnMessage[" + i + "]: " + returnMessage[i]);
-
-                // Read and convert encoder value (byte[] -> short)
-                //int encoderDirection = returnMessage[0];
-                //short encoderValue = BitConverter.ToInt16(returnMessage, 1);
-
-                // Convert encoder value to negative value (if neccessary) and convert it to reziprok value
-                //if (encoderDirection == 0) return (encoderValue * (-0.1));
-                //else return (encoderValue * 0.1);
+                if ((rxStateIst & rxStateSoll) == 1) globalDataSet.Outgoing_DataPackage = globalDataSet.LOGIC_MCP2515_RECEIVER.mcp2515_read_buffer_v3(mcp2515.SPI_INSTRUCTION_READ_RX_BUFFER0);
+                else if ((rxStateIst & rxStateSoll) == 2) globalDataSet.Outgoing_DataPackage = globalDataSet.LOGIC_MCP2515_RECEIVER.mcp2515_read_buffer_v3(mcp2515.SPI_INSTRUCTION_READ_RX_BUFFER1);
             }
         }
     }

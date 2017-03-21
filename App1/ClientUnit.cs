@@ -58,77 +58,68 @@ namespace App1
         {
             dataWriter.WriteBytes(message);
             //for (int i = 0; i < message.Length; i++) Debug.WriteLine("send message[" + i + "]" + message[i]);
+            await dataWriter.StoreAsync();
+            await dataWriter.FlushAsync();
+            //try
+            //{
 
-            try
-            {
-                await dataWriter.StoreAsync();
-                await dataWriter.FlushAsync();
-            }
-            catch (Exception ex)
-            {
-                if (OnError != null)
-                    OnError(ex.Message);
-            }
+            //}
+            //catch (Exception ex)
+            //{
+            //    if (OnError != null)
+            //        OnError(ex.Message);
+            //}
         }
 
         // Check different task numbers and do some work
         private async void clientServerLoop()
         {
-            Byte[] receiveBytes = new byte[8];
-            Byte[] sendBytes = new Byte[8];
-            try
+            byte[] receiveBytes = new byte[8];
+            byte[] sendBytes = new byte[8];
+            //try
+            //{
+            while (true)
             {
-                while (true)
-                {
-                    // Read data from incoming stream (server)
-                    uint sizeFieldCount = await dataReader.LoadAsync(8);
-                    dataReader.ReadBytes(receiveBytes);
-                    //for (int i = 0; i < receiveBytes.Length; i++) Debug.WriteLine("receive receiveBytes[" + i + "]" + receiveBytes[i]);
+                // Read data from server
+                uint sizeFieldCount = await dataReader.LoadAsync(8);
+                dataReader.ReadBytes(receiveBytes);
+                //for (int i = 0; i < receiveBytes.Length; i++) Debug.WriteLine("receiveBytes[" + i + "] " + receiveBytes[i]);
+                Debug.WriteLine("receiveBytes[" + 0 + "] " + receiveBytes[0]);
 
-                    //Debug.WriteLine("receive receiveBytes[" + 3 + "]" + receiveBytes[3]);
-                    //Debug.WriteLine("receive receiveBytes[" + 4 + "]" + receiveBytes[4]);
+                // Set incoming data to global data
+                globalDataSet.Incoming_DataPackage = receiveBytes;
+
+                // Get data from global data
+                //for (int i = 0; i < sendBytes.Length; i++)
+                //{
+                    //sendBytes = globalDataSet.Outgoing_DataPackage;
+                    //Debug.WriteLine("sendBytes[" + i + "]: " + sendBytes[i]);
+                    //Debug.WriteLine("receiveBytes[" + i + "]: " + receiveBytes[i]);
+                //}
+                // Send data to server 
+                sendData(globalDataSet.Outgoing_DataPackage);
 
 
-                    // Set incoming data to global data
-                    globalDataSet.SollControlData = receiveBytes;
+                //uint sizeFieldCount = await dataReader.LoadAsync(8);
+                //if desconneted
+                //if (sizeFieldCount != sizeof(uint))
+                //    return;
 
-                    // TASK 1: Auto mode
-                    // TASK 2: Save ref pos
-                    if ((receiveBytes[0] == 1) | (receiveBytes[0] == 2))
-                    {
-                        // TODO: 
-                        // Handle the smoothing factor!
-                        for (int i = 0; i < sendBytes.Length; i++)
-                        {
-                            sendBytes[i] = globalDataSet.IstControlData[i];
-                            Debug.WriteLine("sendBytes["+ i + "]: " + sendBytes[i]);
-                            Debug.WriteLine("receiveBytes[" + i + "]: " + receiveBytes[i]);
-                        }
-
-                        // Send data back to server 
-                        sendData(sendBytes);
-                    }
-
-                    //uint sizeFieldCount = await dataReader.LoadAsync(8);
-                    //if desconneted
-                    //if (sizeFieldCount != sizeof(uint))
-                    //    return;
-
-                    //dataReader.ReadBytes(receiveBytes);
-                    //uint actualStringLength = await _reader.LoadAsync(stringLenght);
-                    ////if desconneted
-                    //if (stringLenght != actualStringLength)
-                    //    return;
-                    //if (OnDataRecived != null)
-                    //    OnDataRecived(dataReader.ReadString(actualStringLength));
-                }
-
+                //dataReader.ReadBytes(receiveBytes);
+                //uint actualStringLength = await _reader.LoadAsync(stringLenght);
+                ////if desconneted
+                //if (stringLenght != actualStringLength)
+                //    return;
+                //if (OnDataRecived != null)
+                //    OnDataRecived(dataReader.ReadString(actualStringLength));
             }
-            catch (Exception ex)
-            {
-                if (OnError != null)
-                    OnError(ex.Message);
-            }
+
+            //}
+            //catch (Exception ex)
+            //{
+            //    if (OnError != null)
+            //        OnError(ex.Message);
+            //}
         }
 
 

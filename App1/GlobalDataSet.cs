@@ -28,6 +28,9 @@ namespace CanTest
         private byte[] currentMotorAngle = new byte[2];
         private byte[] currentMotorSollValue = new byte[2];
 
+
+        private ActionStates robotPending = ActionStates.init;
+
         // CONTENT
         // 0. byte: Number of the task 
         // 1. byte: ID of the motor to move
@@ -66,6 +69,13 @@ namespace CanTest
             ist_motor_angle_1,
             ist_motor_angle_2,
             ist_encoder_dir
+        };
+
+        public enum ActionStates
+        {
+            init,
+            complete,
+            pending
         };
 
         public GlobalDataSet()
@@ -512,7 +522,7 @@ namespace CanTest
         }
 
 
-        public byte[] SollControlData
+        public byte[] Incoming_DataPackage
         {
             get
             {
@@ -525,7 +535,7 @@ namespace CanTest
             }
         }
 
-        public byte[] IstControlData
+        public byte[] Outgoing_DataPackage
         {
             get
             {
@@ -558,5 +568,17 @@ namespace CanTest
             this.bufferState = bufferState;
         }
 
+        public ActionStates PendingAction
+        {
+            get
+            {
+                return robotPending;
+            }
+
+            set
+            {
+                robotPending = value;
+            }
+        }
     }
 }
