@@ -155,7 +155,7 @@ namespace App1
 
             // Inititalize server
             //Task<bool> serverStarted = serverComm.StartServer();
-            clientUnit.StartClient();
+            clientUnit.StartClient_loop();
         }
 
         private void init_raspberry_pi_gpio()

@@ -30,7 +30,7 @@ namespace App1
             this.globalDataSet = globalDataSet;
         }
 
-        public async void StartClient()
+        public async void StartClient_loop()
         {
             try
             {
@@ -54,22 +54,7 @@ namespace App1
             }
         }
 
-        public async void sendData(Byte[] message)
-        {
-            dataWriter.WriteBytes(message);
-            //for (int i = 0; i < message.Length; i++) Debug.WriteLine("send message[" + i + "]" + message[i]);
-            await dataWriter.StoreAsync();
-            await dataWriter.FlushAsync();
-            //try
-            //{
 
-            //}
-            //catch (Exception ex)
-            //{
-            //    if (OnError != null)
-            //        OnError(ex.Message);
-            //}
-        }
 
         // Check different task numbers and do some work
         private async void clientServerLoop()
@@ -84,7 +69,7 @@ namespace App1
                 uint sizeFieldCount = await dataReader.LoadAsync(8);
                 dataReader.ReadBytes(receiveBytes);
                 //for (int i = 0; i < receiveBytes.Length; i++) Debug.WriteLine("receiveBytes[" + i + "] " + receiveBytes[i]);
-                Debug.WriteLine("receiveBytes[" + 0 + "] " + receiveBytes[0]);
+                //Debug.WriteLine("receiveBytes[" + 0 + "] " + receiveBytes[0]);
 
                 // Set incoming data to global data
                 globalDataSet.Incoming_DataPackage = receiveBytes;
@@ -122,6 +107,22 @@ namespace App1
             //}
         }
 
+        public async void sendData(Byte[] message)
+        {
+            dataWriter.WriteBytes(message);
+            for (int i = 0; i < message.Length; i++) Debug.WriteLine("send message[" + i + "]" + message[i]);
+            await dataWriter.StoreAsync();
+            await dataWriter.FlushAsync();
+            //try
+            //{
+
+            //}
+            //catch (Exception ex)
+            //{
+            //    if (OnError != null)
+            //        OnError(ex.Message);
+            //}
+        }
 
         public void closeConnection()
         {
