@@ -355,6 +355,7 @@ namespace CanTest
             {
                 spiDevice.Read(returnMessageTemp);
                 returnMessage[i] = returnMessageTemp[0];
+                //Debug.WriteLine("returnMessage[" + i + "] " + returnMessage[i]);
             }
             cs_pin.Write(GpioPinValue.High);
 

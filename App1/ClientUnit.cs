@@ -63,6 +63,7 @@ namespace App1
             byte[] sendBytes = new byte[8];
             //try
             //{
+
             while (true)
             {
                 // Read data from server
@@ -77,11 +78,12 @@ namespace App1
                 // Get data from global data
                 //for (int i = 0; i < sendBytes.Length; i++)
                 //{
-                    //sendBytes = globalDataSet.Outgoing_DataPackage;
-                    //Debug.WriteLine("sendBytes[" + i + "]: " + sendBytes[i]);
-                    //Debug.WriteLine("receiveBytes[" + i + "]: " + receiveBytes[i]);
+                //sendBytes = globalDataSet.Outgoing_DataPackage;
+                //Debug.WriteLine("sendBytes[" + i + "]: " + sendBytes[i]);
+                //Debug.WriteLine("receiveBytes[" + i + "]: " + receiveBytes[i]);
                 //}
                 // Send data to server 
+
                 sendData(globalDataSet.Outgoing_DataPackage);
 
 
@@ -110,7 +112,7 @@ namespace App1
         public async void sendData(Byte[] message)
         {
             dataWriter.WriteBytes(message);
-            for (int i = 0; i < message.Length; i++) Debug.WriteLine("send message[" + i + "]" + message[i]);
+            //for (int i = 0; i < message.Length; i++) Debug.WriteLine("send message[" + i + "]" + message[i]);
             await dataWriter.StoreAsync();
             await dataWriter.FlushAsync();
             //try

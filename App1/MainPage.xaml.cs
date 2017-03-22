@@ -444,11 +444,12 @@ namespace App1
         {
             long startTimeCheck = 0;
             //bool preCondIsSet = false;
+            if (!stopwatch_delay.IsRunning) stopwatch_delay.Restart();
 
             while (!globalDataSet.StopAllOperations)
             {
                 // Wait until spi device is ready
-                while (globalDataSet.Spi_not_initialized) if(globalDataSet.DebugMode) Debug.WriteLine("wait for spi device");
+                while (globalDataSet.Spi_not_initialized) if (globalDataSet.DebugMode) Debug.WriteLine("wait for spi device");
 
                 // Send motor angle end position (that comes from server) to device via spi to can bus
                 sendDataToShields();
@@ -504,8 +505,8 @@ namespace App1
 
         private void delay(long startTimeCHeck, long delayAmount)
         {
-            // Wait some time
-            startTimeCHeck = stopwatch_delay.ElapsedMilliseconds;
+             // Wait some time
+             startTimeCHeck = stopwatch_delay.ElapsedMilliseconds;
             while ((stopwatch_delay.ElapsedMilliseconds - startTimeCHeck) <= delayAmount) { }
         }
 
@@ -514,6 +515,7 @@ namespace App1
             // Set motor direction byte and motor angle position bytes to byte array that is send to the motor driver
             //for (int i = 0; i < bytesToSend.Length; i++) bytesToSend[i] = globalDataSet.Incoming_DataPackage[i];
             bytesToSend = globalDataSet.Incoming_DataPackage;
+            //for (int i = 0; i < bytesToSend.Length; i++) Debug.WriteLine("bytesToSend[" + i + "] " + bytesToSend[i]);
 
             // Send byte array to motor driver
             for (int j = 0; j < mcp2515.MessageSizeToMcp; j++) globalDataSet.LOGIC_MCP2515_RECEIVER.mcp2515_load_tx_buffer0(bytesToSend[j], j, mcp2515.MessageSizeToMcp);
@@ -526,20 +528,24 @@ namespace App1
             byte rxStateSoll = 0x03;
 
             // Wait until a message is received in buffer 0 or 1
-            stopwatch_maxWaitMsgIn.Reset();
-            stopwatch_maxWaitMsgIn.Start();
-            while ((globalDataSet.di_mcp2515_int_rec.Read() == GpioPinValue.High) && stopwatch_maxWaitMsgIn.ElapsedMilliseconds <= MAX_WAIT_TIME) { }
-            //while ((globalDataSet.di_mcp2515_int_rec.Read() == GpioPinValue.High)) { }
-            stopwatch_maxWaitMsgIn.Stop();
-
-            if (stopwatch_maxWaitMsgIn.ElapsedMilliseconds < MAX_WAIT_TIME)
+            //stopwatch_maxWaitMsgIn.Reset();
+            //stopwatch_maxWaitMsgIn.Start();
+            //while ((globalDataSet.di_mcp2515_int_rec.Read() == GpioPinValue.High) && stopwatch_maxWaitMsgIn.ElapsedMilliseconds <= MAX_WAIT_TIME) { }
+            if (globalDataSet.di_mcp2515_int_rec.Read() == GpioPinValue.Low)
             {
+                //while ((globalDataSet.di_mcp2515_int_rec.Read() == GpioPinValue.High)) { }
+                //stopwatch_maxWaitMsgIn.Stop();
+
+                //if (stopwatch_maxWaitMsgIn.ElapsedMilliseconds < MAX_WAIT_TIME)
+                //{
                 // Check in which rx buffer the message is
                 rxStateIst = globalDataSet.LOGIC_MCP2515_RECEIVER.mcp2515_get_state_command();
 
                 if ((rxStateIst & rxStateSoll) == 1) globalDataSet.Outgoing_DataPackage = globalDataSet.LOGIC_MCP2515_RECEIVER.mcp2515_read_buffer_v3(mcp2515.SPI_INSTRUCTION_READ_RX_BUFFER0);
                 else if ((rxStateIst & rxStateSoll) == 2) globalDataSet.Outgoing_DataPackage = globalDataSet.LOGIC_MCP2515_RECEIVER.mcp2515_read_buffer_v3(mcp2515.SPI_INSTRUCTION_READ_RX_BUFFER1);
+                //}
             }
+
         }
     }
 }
