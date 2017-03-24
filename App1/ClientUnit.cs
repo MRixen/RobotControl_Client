@@ -113,6 +113,7 @@ namespace App1
         {
             dataWriter.WriteBytes(message);
             //for (int i = 0; i < message.Length; i++) Debug.WriteLine("send message[" + i + "]" + message[i]);
+            //Debug.WriteLine("send message[" + 2 + "]" + message[2]);
             await dataWriter.StoreAsync();
             await dataWriter.FlushAsync();
             //try
