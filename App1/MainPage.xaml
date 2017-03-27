@@ -19,5 +19,7 @@
         <TextBlock x:Name="textBlock_istValue" HorizontalAlignment="Left" Margin="447,294,0,0" TextWrapping="Wrap" Text="" VerticalAlignment="Top" FontSize="20" FontWeight="Bold"/>
         <Button x:Name="button_start" Content="Start" HorizontalAlignment="Left" Margin="10,80,0,0" VerticalAlignment="Top" Height="55" Width="105" FontSize="22" Click="button_start_Click" IsEnabled="true"/>
         <Button x:Name="button_stopp" Content="Stopp" HorizontalAlignment="Left" Margin="10,175,0,0" VerticalAlignment="Top" Height="55" Width="105" FontSize="22" Click="button_stopp_Click" IsEnabled="true"/>
+        <Button x:Name="button" Content="Save act pos" HorizontalAlignment="Left" Margin="10,272,0,0" VerticalAlignment="Top" Click="button_Click_saveActPos"/>
+        <TextBox x:Name="textBox_saveActPos_state" HorizontalAlignment="Left" Margin="113,272,0,0" TextWrapping="Wrap" Text="" VerticalAlignment="Top"/>
     </Grid>
 </Page>

@@ -177,6 +177,7 @@ namespace App1
                 globalDataSet.do_mcp2515_cs_rec = configureGpio(gpioController, (int)RASPBERRYPI.GPIO.GPIO_12, GpioPinValue.High, GpioPinDriveMode.Output);
                 globalDataSet.di_mcp2515_int_rec = configureGpio(gpioController, (int)RASPBERRYPI.GPIO.GPIO_13, GpioPinDriveMode.Input);
                 globalDataSet.do_startAcquisition = configureGpio(gpioController, (int)RASPBERRYPI.GPIO.GPIO_17, GpioPinValue.Low, GpioPinDriveMode.Output);
+                globalDataSet.do_saveActEncPos = configureGpio(gpioController, (int)RASPBERRYPI.GPIO.GPIO_21, GpioPinValue.High, GpioPinDriveMode.Output);
             }
             catch (FileLoadException ex)
             {
@@ -501,6 +502,14 @@ namespace App1
         {
             currentMotorAngle = slider.Value;
             textBlock_istValue.Text = currentMotorAngle.ToString();
+        }
+
+        private void button_Click_saveActPos(object sender, RoutedEventArgs e)
+        {
+            if(globalDataSet.SaveActEncPos) globalDataSet.SaveActEncPos = false;
+            else globalDataSet.SaveActEncPos = true;
+
+            textBox_saveActPos_state.Text = globalDataSet.SaveActEncPos.ToString();
         }
 
         private void delay(long startTimeCHeck, long delayAmount)

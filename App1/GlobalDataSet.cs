@@ -16,7 +16,7 @@ namespace CanTest
         private bool spi_not_initialized = true;
         private GpioPin mCP2515_PIN_CS_SENDER, mCP2515_PIN_INTE_SENDER;
         private GpioPin mCP2515_PIN_CS_RECEIVER, mCP2515_PIN_INTE_RECEIVER;
-        private GpioPin rEQUEST_DATA_EXECUTOR_0, rEQUEST_DATA_EXECUTOR_1, sTART_PIN_OUT, rEQUEST_DATA_HANDSHAKE_EXECUTOR_0, rEQUEST_DATA_HANDSHAKE_EXECUTOR_1;
+        private GpioPin rEQUEST_DATA_EXECUTOR_0, rEQUEST_DATA_EXECUTOR_1, sTART_PIN_OUT, rEQUEST_DATA_HANDSHAKE_EXECUTOR_0, rEQUEST_DATA_HANDSHAKE_EXECUTOR_1, rSAVE_ACT_ENC_POS;
         private MCP2515 mcp2515;
         private SpiDevice spiDevice;
         private Logic_Mcp2515_Sender logic_Mcp2515_Sender;
@@ -27,6 +27,7 @@ namespace CanTest
         private string HOST_PORT_SEND = "4001";
         private byte[] currentMotorAngle = new byte[2];
         private byte[] currentMotorSollValue = new byte[2];
+        private bool saveActEncPos = false;
 
 
         private ActionStates robotPending = ActionStates.init;
@@ -217,12 +218,12 @@ namespace CanTest
         {
             get
             {
-                return rEQUEST_DATA_EXECUTOR_0;
+                return REQUEST_DATA_EXECUTOR_0;
             }
 
             set
             {
-                rEQUEST_DATA_EXECUTOR_0 = value;
+                REQUEST_DATA_EXECUTOR_0 = value;
             }
         }
 
@@ -579,6 +580,45 @@ namespace CanTest
             set
             {
                 robotPending = value;
+            }
+        }
+
+        public GpioPin REQUEST_DATA_EXECUTOR_0
+        {
+            get
+            {
+                return rEQUEST_DATA_EXECUTOR_0;
+            }
+
+            set
+            {
+                rEQUEST_DATA_EXECUTOR_0 = value;
+            }
+        }
+
+        public GpioPin do_saveActEncPos
+        {
+            get
+            {
+                return rSAVE_ACT_ENC_POS;
+            }
+
+            set
+            {
+                rSAVE_ACT_ENC_POS = value;
+            }
+        }
+
+        public bool SaveActEncPos
+        {
+            get
+            {
+                return saveActEncPos;
+            }
+
+            set
+            {
+                saveActEncPos = value;
             }
         }
     }
