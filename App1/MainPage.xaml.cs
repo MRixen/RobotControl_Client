@@ -524,7 +524,7 @@ namespace App1
             // Set motor direction byte and motor angle position bytes to byte array that is send to the motor driver
             //for (int i = 0; i < bytesToSend.Length; i++) bytesToSend[i] = globalDataSet.Incoming_DataPackage[i];
             bytesToSend = globalDataSet.Incoming_DataPackage;
-            for (int i = 0; i < bytesToSend.Length; i++) Debug.WriteLine("bytesToSend[" + i + "] " + bytesToSend[i]);
+            //for (int i = 0; i < bytesToSend.Length; i++) Debug.WriteLine("bytesToSend[" + i + "] " + bytesToSend[i]);
 
             // Send byte array to motor driver
             for (int j = 0; j < mcp2515.MessageSizeToMcp; j++) globalDataSet.LOGIC_MCP2515_RECEIVER.mcp2515_load_tx_buffer0(bytesToSend[j], j, mcp2515.MessageSizeToMcp);
