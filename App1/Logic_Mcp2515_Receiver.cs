@@ -173,8 +173,13 @@ namespace CanTest
             byte[] returnMessage = new byte[mcp2515.MessageSizeToMcp];
 
             returnMessage = globalDataSet.readSimpleCommandSpi_v3(bufferId, globalDataSet.do_mcp2515_cs_rec);
+            //if (returnMessage[1] == 2)
+            //{
+            //    //Debug.WriteLine("returnMessage[1]: " + returnMessage[1]);
+            //    Debug.WriteLine("state comes from motor 2: " + returnMessage[2]);
+            //}
 
-            return returnMessage;
+                return returnMessage;
         }
 
         public byte mcp2515_get_state_command()

@@ -22,7 +22,7 @@ namespace CanTest
         private Logic_Mcp2515_Sender logic_Mcp2515_Sender;
         private Logic_Mcp2515_Receiver logic_Mcp2515_Receiver;
         private bool debugMode;
-        private string HOST_IP = "192.168.0.111";
+        private string HOST_IP = "192.168.0.22";
         private string HOST_PORT_RECEIVE = "4002";
         private string HOST_PORT_SEND = "4001";
         private byte[] currentMotorAngle = new byte[2];

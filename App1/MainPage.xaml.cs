@@ -524,6 +524,11 @@ namespace App1
             // Set motor direction byte and motor angle position bytes to byte array that is send to the motor driver
             //for (int i = 0; i < bytesToSend.Length; i++) bytesToSend[i] = globalDataSet.Incoming_DataPackage[i];
             bytesToSend = globalDataSet.Incoming_DataPackage;
+            //if (bytesToSend[1] == 2)
+            //{
+            //    //Debug.WriteLine("returnMessage[1]: " + returnMessage[1]);
+            //    Debug.WriteLine("action goes to motor 2: " + bytesToSend[0]);
+            //}
             //for (int i = 0; i < bytesToSend.Length; i++) Debug.WriteLine("bytesToSend[" + i + "] " + bytesToSend[i]);
 
             // Send byte array to motor driver
