@@ -69,10 +69,10 @@ namespace App1
                 // Read data from server
                 uint sizeFieldCount = await dataReader.LoadAsync(8);
                 dataReader.ReadBytes(receiveBytes);
-                //if (receiveBytes[1] == 1)
-                //{
-                //    for (int i = 0; i < receiveBytes.Length; i++) Debug.WriteLine("receiveBytes[" + i + "] " + receiveBytes[i]);
-                //}
+                if (receiveBytes[1] == 1)
+                {
+                    //for (int i = 0; i < receiveBytes.Length; i++) Debug.WriteLine("receiveBytes[" + i + "] " + receiveBytes[i]);
+                }
                 //Debug.WriteLine("receiveBytes[" + 0 + "] " + receiveBytes[0]);
 
                 // Set incoming data to global data
