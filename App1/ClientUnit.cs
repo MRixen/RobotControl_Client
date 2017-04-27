@@ -18,12 +18,16 @@ namespace App1
         private StreamSocket socket_client_receive, socket_client_send;
         private DataWriter dataWriter;
         private DataReader dataReader;
+        private Stopwatch stopwatch_delay = new Stopwatch();
 
         public delegate void Error(string message);
         public event Error OnError;
 
         public delegate void DataRecived(string data);
         public event DataRecived OnDataRecived;
+
+        public delegate void myEvent(byte[] data);
+        public event myEvent newEvent; 
 
         public ClientUnit(GlobalDataSet globalDataSet)
         {
@@ -32,6 +36,7 @@ namespace App1
 
         public async void StartClient_loop()
         {
+
             try
             {
                 var hostName = new HostName(globalDataSet.HostIp);
@@ -64,19 +69,25 @@ namespace App1
             //try
             //{
 
+            long startTimeCheck = 0;
+            if (!stopwatch_delay.IsRunning) stopwatch_delay.Restart();
+
             while (true)
             {
                 // Read data from server
                 uint sizeFieldCount = await dataReader.LoadAsync(8);
                 dataReader.ReadBytes(receiveBytes);
-                if (receiveBytes[1] == 1)
-                {
-                    //for (int i = 0; i < receiveBytes.Length; i++) Debug.WriteLine("receiveBytes[" + i + "] " + receiveBytes[i]);
-                }
-                //Debug.WriteLine("receiveBytes[" + 0 + "] " + receiveBytes[0]);
+
+                //for (int i = 0; i < receiveBytes.Length; i++) Debug.WriteLine("receiveBytes[" + i + "] " + receiveBytes[i]);
+
+                //Debug.WriteLine("receiveBytes[" + 1 + "] " + receiveBytes[1]);
+                //Debug.WriteLine("receiveBytes[" + 4 + "] " + receiveBytes[4]);
+                //Debug.WriteLine("----------");
 
                 // Set incoming data to global data
                 globalDataSet.Incoming_DataPackage = receiveBytes;
+
+                this.newEvent(receiveBytes);
 
                 // Get data from global data
                 //for (int i = 0; i < sendBytes.Length; i++)
@@ -91,9 +102,13 @@ namespace App1
                 //{
                 //    //for (int i = 2; i < 3; i++) Debug.WriteLine("globalDataSet.Outgoing_DataPackage[" + i + "] " + globalDataSet.Outgoing_DataPackage[i]);
                 //}
+                //Debug.WriteLine("out[" + 1 + "] " + globalDataSet.Outgoing_DataPackage[1]);
+                //Debug.WriteLine("out[" + 3 + "] " + globalDataSet.Outgoing_DataPackage[4]);
+                //Debug.WriteLine("----------");
+
                 sendData(globalDataSet.Outgoing_DataPackage);
 
-
+                delay(startTimeCheck, 40);
                 //uint sizeFieldCount = await dataReader.LoadAsync(8);
                 //if desconneted
                 //if (sizeFieldCount != sizeof(uint))
@@ -108,12 +123,21 @@ namespace App1
                 //    OnDataRecived(dataReader.ReadString(actualStringLength));
             }
 
+
+
             //}
             //catch (Exception ex)
             //{
             //    if (OnError != null)
             //        OnError(ex.Message);
             //}
+        }
+
+        private void delay(long startTimeCHeck, long delayAmount)
+        {
+            // Wait some time
+            startTimeCHeck = stopwatch_delay.ElapsedMilliseconds;
+            while ((stopwatch_delay.ElapsedMilliseconds - startTimeCHeck) <= delayAmount) { }
         }
 
         public async void sendData(Byte[] message)

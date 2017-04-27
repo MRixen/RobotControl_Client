@@ -32,6 +32,9 @@ namespace App1
 {
     public sealed partial class MainPage : Page
     {
+        long startTimeCheck;
+
+
         // TODO: Add something to shutdown everything (with stopAllOperations flag)
         // TODO: Change sensor data to acquire only the constant g values -> low pass filter
         private MCP2515 mcp2515;
@@ -130,6 +133,8 @@ namespace App1
             diagnose = new Diagnose(globalDataSet);
             mcp2515 = globalDataSet.Mcp2515;
             pulses = new Pulses();
+
+            clientUnit.newEvent += new ClientUnit.myEvent(this.dataPackageReceived);
 
 
             // USER CONFIGURATION
@@ -443,28 +448,28 @@ namespace App1
         // Receive angle position from motors and set it to global variable
         private void controlLoop()
         {
-            long startTimeCheck = 0;
-            //bool preCondIsSet = false;
-            if (!stopwatch_delay.IsRunning) stopwatch_delay.Restart();
+            //long startTimeCheck = 0;
+            ////bool preCondIsSet = false;
+            //if (!stopwatch_delay.IsRunning) stopwatch_delay.Restart();
 
-            while (!globalDataSet.StopAllOperations)
-            {
-                // Wait until spi device is ready
-                while (globalDataSet.Spi_not_initialized) if (globalDataSet.DebugMode) Debug.WriteLine("wait for spi device");
+            //while (!globalDataSet.StopAllOperations)
+            //{
+            //    // Wait until spi device is ready
+            //    while (globalDataSet.Spi_not_initialized) if (globalDataSet.DebugMode) Debug.WriteLine("wait for spi device");
 
-                // Send motor angle end position (that comes from server) to device via spi to can bus
-                sendDataToShields();
+            //    // Send motor angle end position (that comes from server) to device via spi to can bus
+            //    sendDataToShields();
 
-                // Delay for program execution. Its neccessary to avoid failures in data transmission
-                delay(startTimeCheck, 20);
+            //    // Delay for program execution. Its neccessary to avoid failures in data transmission
+            //    delay(startTimeCheck, 20);
 
-                // Read encoder value from device via spi from can bus
-                receiveDataFromShields();
+            //    // Read encoder value from device via spi from can bus
+            //    receiveDataFromShields();
 
-                // Delay for program execution. Its neccessary to avoid failures in data transmission
-                delay(startTimeCheck, 20);
+            //    // Delay for program execution. Its neccessary to avoid failures in data transmission
+            //    delay(startTimeCheck, 20);
 
-            }
+            //}
         }
 
         private void stopWatchStop(Stopwatch stopwatch)
@@ -506,7 +511,7 @@ namespace App1
 
         private void button_Click_saveActPos(object sender, RoutedEventArgs e)
         {
-            if(globalDataSet.SaveActEncPos) globalDataSet.SaveActEncPos = false;
+            if (globalDataSet.SaveActEncPos) globalDataSet.SaveActEncPos = false;
             else globalDataSet.SaveActEncPos = true;
 
             textBox_saveActPos_state.Text = globalDataSet.SaveActEncPos.ToString();
@@ -514,16 +519,46 @@ namespace App1
 
         private void delay(long startTimeCHeck, long delayAmount)
         {
-             // Wait some time
-             startTimeCHeck = stopwatch_delay.ElapsedMilliseconds;
+            // Wait some time
+            startTimeCHeck = stopwatch_delay.ElapsedMilliseconds;
             while ((stopwatch_delay.ElapsedMilliseconds - startTimeCHeck) <= delayAmount) { }
+        }
+
+        public void dataPackageReceived(byte[] data)
+        {
+            if (!stopwatch_delay.IsRunning)
+            {
+                stopwatch_delay.Restart();
+                startTimeCheck = 0;
+            }
+
+            // Write new data to current context and change the flag to show the sending thread that new data is available
+            this.bytesToSend = data;
+
+            // Wait until spi device is ready
+            if (!globalDataSet.Spi_not_initialized)
+            {
+                // Send motor angle end position (that comes from server) to device via spi to can bus
+                sendDataToShields();
+
+                // Delay for program execution. Its neccessary to avoid failures in data transmission
+                delay(startTimeCheck, 20);
+
+                // Read encoder value from device via spi from can bus
+                receiveDataFromShields();
+
+                // Delay for program execution. Its neccessary to avoid failures in data transmission
+                //delay(startTimeCheck, 20);
+            }
         }
 
         private void sendDataToShields()
         {
             // Set motor direction byte and motor angle position bytes to byte array that is send to the motor driver
             //for (int i = 0; i < bytesToSend.Length; i++) bytesToSend[i] = globalDataSet.Incoming_DataPackage[i];
-            bytesToSend = globalDataSet.Incoming_DataPackage;
+
+            //bytesToSend = globalDataSet.Incoming_DataPackage;
+
             //if (bytesToSend[1] == 2)
             //{
             //    //Debug.WriteLine("returnMessage[1]: " + returnMessage[1]);
